@@ -1,0 +1,150 @@
+---
+title: 'Class10: Machine Learning Project'
+author: "Barry Grant"
+date: "2/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Get our input data
+
+Our data for today come from the Wisconsin Breast Cancer Diagnostic Data Set
+
+```{r}
+wisc.df <- read.csv("WisconsinCancer (1).csv")
+head(wisc.df)
+```
+
+```{r}
+wisc.data <- as.matrix(wisc.df[,3:32])
+head(wisc.data)
+```
+
+> Q. How many patients are there in this dataset?
+
+```{r}
+nrow(wisc.df)
+```
+
+> Q. How many cancer and non-cancer patients are there?
+
+```{r}
+table(wisc.df$diagnosis)
+```
+
+```{r}
+sum(wisc.df$diagnosis == "M")
+```
+
+> Q. How many cols are "_mean" values?
+
+```{r}
+colnames(wisc.df)
+```
+
+We can use the `grep()` function to see this
+
+```{r}
+grep("_mean", colnames(wisc.df), value=TRUE )
+```
+
+We can take the `length()` of this to find how many matches there are
+```{r}
+length( grep("_mean", colnames(wisc.df)) ) 
+```
+
+
+## Enter Principal Component Analysis
+
+First we need to check whether our input data should be scaled. Lets check the sd() and mean() of all our columns in `wisc.data`
+
+```{r}
+round( apply(wisc.data, 2, sd), 2)
+```
+
+```{r}
+# Perform PCA on wisc.data by completing the following code
+wisc.pr <- prcomp( wisc.data, scale=TRUE )
+summary(wisc.pr)
+```
+
+```{r}
+biplot(wisc.pr)
+```
+
+This is a hot mess! We need to cook our own PCA plot. To do this we need to access the results within the `wisc.pr` object.
+
+```{r}
+attributes(wisc.pr)
+```
+
+We want the $x component to make our PCA plot!
+```{r}
+plot(wisc.pr$x[,1], wisc.pr$x[,2], col=wisc.df$diagnosis)
+```
+
+
+
+Wow, this looks cool! There is a separation of the red (cancer) from black (non-cancer) samples. 
+
+### Hierarchical clustering
+
+Can we find a separation of cancer from non-cancer using a clustering method on the original input data?
+
+For this we will use the `hclust()` function on the `wisc.data` object that we used for PCA.
+
+```{r}
+hc <- hclust( dist(wisc.data) )
+plot(hc)
+```
+
+I don't know where it is good to *cut* a tree like this... 
+
+I can cluster in PC space - in other words use the results of PCA to do my clustering
+
+```{r}
+wisc.pr.hc <- hclust( dist(wisc.pr$x[,1:3]), method="ward.D2" )
+plot(wisc.pr.hc)
+```
+
+```{r}
+grps <- cutree(wisc.pr.hc, k=2)
+table(grps)
+```
+
+```{r}
+table(grps, wisc.df$diagnosis)
+```
+
+```{r}
+plot(wisc.pr$x[,1], wisc.pr$x[,2], col=grps)
+```
+
+
+## Prediction using our PCA model
+
+We will use the `predict()` function that will take our PCA model from before and new cancer cell data and project that data onto our PCA space.
+
+```{r}
+url <- "https://tinyurl.com/new-samples-CSV"
+new <- read.csv(url)
+npc <- predict(wisc.pr, newdata=new)
+npc
+```
+
+```{r}
+plot(wisc.pr$x[,1], wisc.pr$x[,2], col=wisc.df$diagnosis)
+points(npc[,1], npc[,2], col="blue", pch=16, cex=3)
+text(npc[,1], npc[,2], labels=c(1,2) , col="white")
+```
+
+
+```{r}
+#install.packages("factoextra")
+library(factoextra)
+fviz_eig(wisc.pr, addlabels = TRUE)
+```
+
