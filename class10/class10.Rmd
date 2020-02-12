@@ -2,7 +2,7 @@
 title: 'Class10: Machine Learning Project'
 author: "Barry Grant"
 date: "2/7/2020"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
