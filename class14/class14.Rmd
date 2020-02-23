@@ -1,0 +1,170 @@
+---
+title: "Transcriptomics and the analysis of RNA-Seq data"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read our data for today
+
+```{r}
+counts <- read.csv("airway_scaledcounts.csv", stringsAsFactors = FALSE)
+metadata <-  read.csv("airway_metadata.csv", stringsAsFactors = FALSE)
+```
+
+```{r}
+head(counts)
+```
+
+How many genes are we dealing with?
+
+```{r}
+nrow(counts)
+```
+
+We will compare the control vs treated count data contained in `counts` object. 
+
+We will first extract the control columns by looking up their colnames in the `metadata` object.
+
+```{r}
+x <- 1:5
+x > 3
+x[ x > 3]
+```
+
+
+
+```{r}
+#metadata
+#metadata$dex =="control"
+
+# Access just the "control" metadata
+control <- metadata[metadata$dex =="control", ]
+control
+```
+
+Access the conunt colums with control$id 
+```{r}
+counts[ , control$id]
+```
+
+Now find the mean value for each gene (i.e. each row)
+
+```{r}
+# Now find the mean value for each gene (i.e. each row)
+control.mean <- rowSums(counts[ , control$id])/ nrow(control)
+names(control.mean) <- counts$ensgene
+```
+
+Now do the same for "treated" samples
+```{r}
+treated <- metadata[metadata$dex =="treated", ]
+treated.mean <- rowMeans(counts[,treated$id])
+```
+
+Let's put these together for ease of use
+
+```{r}
+mycounts <- data.frame(control.mean, treated.mean)
+```
+
+Lets just plot our data
+
+```{r}
+plot(mycounts)
+```
+
+```{r}
+hist(mycounts$control.mean, breaks = 300)
+```
+
+Our data is very skewed so lets work with logs. First re-plot our control vs treated on a log-log scale
+
+```{r}
+plot(mycounts, log="xy")
+```
+
+Lets remove our zero count genes because we can't say anything about them from this dataset!
+
+```{r}
+x <- data.frame( c(1, 3, 10, 0),
+                 c(1, 3, 0,  0) )
+
+x
+
+ unique(which(x == 0, arr.ind = TRUE)[,"row"] )
+```
+
+Ok find zero rows in our mycounts object
+
+```{r}
+to.rm <- unique(which(mycounts == 0, arr.ind = TRUE)[,"row"] )
+newcounts <- mycounts[-to.rm,]
+
+```
+
+How many genes have we now?
+
+```{r}
+nrow(newcounts)
+```
+
+Here we calculate log2foldchange, add it to our meancounts data.frame and inspect the results either with the head() or the View() function for example.
+
+
+```{r}
+newcounts$log2fc <- log2(newcounts[,"treated.mean"]/newcounts[,"control.mean"])
+head(newcounts)
+```
+
+A common rule of thum in the field is to use a log2fc of greate than +2 as *up regulated* and less than -2 as *down regulated*.
+
+How many of our genes are up regulated upon this drug treatment?
+
+```{r}
+sum(newcounts$log2fc > 2)
+```
+
+How many are down at this threshold
+
+```{r}
+sum(newcounts$log2fc < -2)
+```
+
+
+## Lets use DESeq2
+
+```{r}
+library(DESeq2)
+```
+
+Setup the object required by DESeq
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex, 
+                              tidy=TRUE)
+dds
+```
+
+
+```{r}
+dds <- DESeq(dds)
+```
+
+```{r}
+res <- results(dds)
+res
+```
+
+## Volcano plots
+
+Plot of log2fc vs p-value
+```{r}
+plot(res$log2FoldChange, -log(res$padj), col="gray") 
+abline(v=c(-2,+2), lty=2)
+abline(h=-log(0.05), lty=2)
+```
+

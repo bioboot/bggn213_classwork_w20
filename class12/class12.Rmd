@@ -8,3 +8,108 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## PDB Statistics
+
+Download a CSV file from the PDB site (accessible from “Analyze” > “PDB Statistics” > “by Experimental Method and Molecular Type”. Move this CSV file into your RStudio project and use it to answer the following questions:
+
+> Q: What percentage of structures in the PDB are solved by X-Ray and Electron Microscopy.
+
+```{r}
+stats <- read.csv("Data Export Summary.csv", row.names = 1)
+stats
+```
+
+```{r}
+ans <- round(stats$Total / sum(stats$Total) * 100, 2)
+names(ans) <- rownames(stats)
+ans
+```
+
+
+> Q: What proportion of structures in the PDB are protein?
+
+```{r}
+round(sum(stats$Proteins) / sum(stats$Total) * 100, 2)
+```
+
+
+```{r}
+
+```
+
+> Q: Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?
+
+
+## 2. Using bio3d to analyse protein structure data
+
+Use the bio3d package from CRAN. 
+
+```{r}
+library(bio3d)
+
+pdb <- read.pdb("1hsg")
+pdb
+```
+
+Adenylate kinase structures from the PDB for analysis
+
+```{r}
+hits <- NULL
+hits$pdb.id <- c('1AKE_A','4X8M_A','6S36_A','6RZE_A','4X8H_A',
+                 '3HPR_A','1E4V_A','5EJE_A','1E4Y_A','3X2S_A',
+                 '6HAP_A','6HAM_A','4K46_A','4NP6_A','3GMT_A',
+                 '4PZL_A')
+```
+
+Download and parse these structures
+
+```{r}
+# Download releated PDB files
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+```
+
+
+Align and superpose structures
+
+```{r}
+# Align releated PDBs
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+```
+
+
+
+```{r}
+library(rgl)
+library(bio3d.view)
+view(pdbs)
+
+rglwidget(elementId = "tmp")
+```
+
+
+
+```{r}
+pc <- pca(pdbs)
+plot(pc)
+```
+
+
+
+```{r}
+plot(pc, 1:2)
+```
+
+
+Make a PCA trajectory 
+
+
+```{r}
+pc1 <- mktrj(pc, pc=1, file="pc_1.pdb")
+
+```
+
+
+
+```{r}
+view(pc1)
+```
+
