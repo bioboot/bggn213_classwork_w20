@@ -1,0 +1,113 @@
+---
+title: "Class 15: Genomics I"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read sample genotypes data from ENSEMBLE
+
+We downloaded genotype data from ENSEMBLE on the MXL Mexican Ancestry in Los Angeles, California dataset.
+
+What proportion of this data are G/G etc?
+
+```{r}
+mxl <- read.csv("373531-SampleGenotypes-Homo_sapiens_Variation_Sample_rs8067378.csv")
+
+head(mxl)
+```
+
+We want to look at the second column that contains the genotype information
+
+```{r}
+table( mxl$Genotype..forward.strand. )
+```
+
+
+## RNA-Seq result analysis for different genotypes of this SNP
+
+```{r}
+expr <- read.table("rs8067378_ENSG00000172057.6.txt")
+head(expr)
+```
+
+```{r}
+summary( expr[ expr$geno == "G/G", ]$exp )
+```
+
+```{r}
+summary( expr[ expr$geno == "A/G", ]$exp )
+```
+
+```{r}
+summary( expr[ expr$geno == "A/A", ]$exp )
+```
+
+## Try a boxplot
+
+We will use the `boxplot()` function and the input data will be **expr**. How do we draw a useful plot?
+
+```{r}
+boxplot(exp ~ geno , data=expr, notch=TRUE)
+```
+
+How many samples are we looking at here?
+```{r}
+nrow(expr)
+```
+
+
+```{r}
+hist( expr[ expr$geno == "G/G", ]$exp, breaks=20 )
+```
+
+
+
+```{r}
+x <- 1:10
+x[ x > 5 ]
+```
+
+
+
+## Try dplyr approch
+```{r}
+library(dplyr)
+```
+
+```{r}
+expr %>%
+  group_by(geno) %>%
+  summarise(count_by_genotype=n(),
+            mean_exp = mean(exp),
+            sd_exp = sd(exp))
+```
+
+And a ggplot
+
+```{r}
+library(ggplot2)
+
+ggplot(expr, aes(geno, exp, fill=geno)) +
+  geom_boxplot(notch = TRUE, outlier.alpha=0.5) +
+  labs(x="Genotype", y="Expression",
+       title="Expresion of by genotype for rs8067378",
+       subtitle = "See class15 workbook",
+       caption="ENSG00000172057") +
+  theme(legend.position = "none") 
+```
+
+And a formated table
+```{r}
+expr %>%
+  group_by(geno) %>%
+  summarise(number_samples=n(),
+            mean_exp = round(mean(exp),2),
+            sd_exp = round(sd(exp),2)) %>%
+  kableExtra::kable()
+```
+
+
+
