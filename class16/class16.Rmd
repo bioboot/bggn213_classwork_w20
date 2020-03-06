@@ -12,6 +12,10 @@ See the live code version here
 
 https://tinyurl.com/class16-bggn213
 
+Or after class see the GitHub version:
+
+https://github.com/bioboot/bggn213_classwork_w20/blob/master/class16/class16.md
+
 ## Download and read input data
 
 The data for for hands-on session comes from GEO entry: GSE37704, which is associated with the following publication:
